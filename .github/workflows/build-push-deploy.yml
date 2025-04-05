@@ -31,6 +31,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
+      - name: Stop and Remove Old Container
+        run: |
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
+
+      - name: Remove Old Docker Image
+        run: |
+          docker rmi ${{ env.IMAGE_NAME }}:latest || true
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -40,11 +49,6 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}
-
-      - name: Stop and Remove Old Container
-        run: |
-          docker stop ${{ env.CONTAINER_NAME }} || true
-          docker rm ${{ env.CONTAINER_NAME }} || true
 
       - name: Create Docker Network
         run: docker network create ${{ env.NETWORK_NAME }} || true
