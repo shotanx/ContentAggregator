@@ -1,8 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using ContentAggregator.Core.Interfaces;
-using ContentAggregator.Core.Models;
 using Microsoft.IdentityModel.Tokens;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ContentAggregator.API.Services.BackgroundServices
 {
@@ -68,10 +67,11 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private async Task<string?> DownloadSubtitlesAsync(string videoId, string tempDir)
         {
             string tempDirForSingleSub = CreateTempDirectory(tempDir);
-            string ytDlpPath = Path.Combine(Path.DirectorySeparatorChar.ToString(), "tools", "yt-dlp");
+            string executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "yt-dlp.exe" : "yt-dlp";
+            string ytDlpPath = Path.Combine("tools", executableName);
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine("tools", "yt-dlp"),
+                FileName = ytDlpPath,
                 //FileName = Constants.ytdlpLocation,
                 Arguments = $"--write-auto-sub --sub-lang en --convert-subs srt --output \"subtitle.%(ext)s\" --skip-download https://www.youtube.com/watch?v={videoId}",
                 WorkingDirectory = tempDirForSingleSub,
