@@ -32,12 +32,12 @@ namespace ContentAggregator.API.Services.BackgroundServices
                         var youtubeContents = await yTRepository.GetYTContentsForFBPost();
                         _logger.LogInformation($"{DateTime.Now}: DB query returned {youtubeContents.Count} items ready to be posted on FB.");
 
-                        if (youtubeContents == null || !youtubeContents.Any())
+                        if (youtubeContents.Any())
                         {
                             foreach (var content in youtubeContents)
                             {
                                 var postUrl = $"https://www.youtube.com/watch?v={content.VideoId}";
-                                var message = (content.VideoSummaryGeo ?? content.VideoSummaryEng) + $"\n\n{Constants.AISummaryDisclaimer}";
+                                var message = (content.VideoSummaryGeo ?? content.VideoSummaryEng) + $"\n\n{Constants.AISummaryDisclaimer}"; // TODO: No need to post english.
                                 await _fbPoster.SharePost(_fbPageId, postUrl, message);
                                 _logger.LogInformation($"{DateTime.Now}: Posting on FB.");
 

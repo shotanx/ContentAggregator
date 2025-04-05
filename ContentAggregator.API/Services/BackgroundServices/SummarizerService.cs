@@ -31,6 +31,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 {
                     using (var scope = _serviceProvider.CreateScope())
                     {
+                        _logger.LogInformation($"{DateTime.Now}: Starting LLM Service");
                         var yTRepository = scope.ServiceProvider.GetRequiredService<IYoutubeContentRepository>();
                         var featureRepository = scope.ServiceProvider.GetRequiredService<IFeatureRepository>();
 
@@ -41,7 +42,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                         {
                             if (content.VideoSummaryEng == null)
                             {
-                                _logger.LogInformation($"{DateTime.Now}: LLM Service requested for summary generation.");
+                                _logger.LogInformation($"{DateTime.Now}: LLM Service requesting summary for youtube content with ID: {content.Id}.");
                                 var generatedSummaryWithParticipants = await GenerateSummaryAsync(content.SubtitlesFiltered);
 
                                 var firstLineEndIndex = generatedSummaryWithParticipants.IndexOf('\n');
@@ -49,7 +50,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                                 ParseParticipants(generatedSummaryWithParticipants, content, features);
 
                                 await yTRepository.UpdateYTContentsAsync(content);
-                                _logger.LogInformation($"{DateTime.Now}: LLM Service returned successfully. Summary generated and participants parsed.");
+                                _logger.LogInformation($"{DateTime.Now}: LLM Service successfully generated and saved summary for youtube content with ID: {content.Id}.");
                             }
                         }
                     }
