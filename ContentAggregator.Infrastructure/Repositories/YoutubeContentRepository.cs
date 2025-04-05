@@ -36,7 +36,7 @@ namespace ContentAggregator.Infrastructure.Repositories
 
         public async Task<List<YoutubeContent>> GetYTContentsForFBPost()
         {
-            return await _context.YoutubeContents.Where(x => x.VideoSummaryGeo != null && x.FbPosted).ToListAsync();
+            return await _context.YoutubeContents.Where(x => x.VideoSummaryGeo != null && !x.FbPosted).ToListAsync();
         }
 
         public async Task AddYTContents(List<YoutubeContent> contents)
