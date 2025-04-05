@@ -68,6 +68,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private async Task<string?> DownloadSubtitlesAsync(string videoId, string tempDir)
         {
             string tempDirForSingleSub = CreateTempDirectory(tempDir);
+            string ytDlpPath = Path.Combine("tools", "yt-dlp");
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine("tools", "yt-dlp"),
@@ -79,6 +80,16 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+            if (!File.Exists(ytDlpPath))
+            {
+                throw new FileNotFoundException($"The 'yt-dlp' executable was not found at path: {ytDlpPath}");
+            }
+
+            if (!Directory.Exists(tempDirForSingleSub))
+            {
+                throw new DirectoryNotFoundException($"The working directory does not exist: {tempDirForSingleSub}");
+            }
 
             using (var process = new Process { StartInfo = processStartInfo })
             {
