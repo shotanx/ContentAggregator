@@ -81,7 +81,7 @@ jobs:
             --name ${{ env.CONTAINER_NAME }} \
             --network ${{ env.NETWORK_NAME }} \
             -v "$(pwd)/dev-cert.pfx:/etc/ssl/certs/dev-cert.pfx" \
-            -v "$(pwd)/${{ env.YTDLP_DIR }}:/tools" \
+            -v "$(pwd)/${{ env.YTDLP_DIR }}:/app/tools" \
             -p 80:80 \
             -p 443:443 \
             -e CERT_PASSWORD="${{ secrets.CERT_PASSWORD }}" \
