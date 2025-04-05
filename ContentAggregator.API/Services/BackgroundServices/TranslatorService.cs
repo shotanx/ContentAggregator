@@ -9,8 +9,8 @@ namespace ContentAggregator.API.Services.BackgroundServices
     public class TranslatorService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly string _apiKey;  // Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-        private readonly string _azureTranslatorURL;  // Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+        private readonly string _apiKey;
+        private readonly string _azureTranslatorURL;
         private readonly ILogger<TranslatorService> _logger;
 
         public TranslatorService(IServiceProvider serviceProvider, IConfiguration configuration, ILogger<TranslatorService> logger)

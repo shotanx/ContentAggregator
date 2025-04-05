@@ -5,6 +5,7 @@ using ContentAggregator.Infrastructure.Data;
 using ContentAggregator.Core.Entities;
 using ContentAggregator.Core.Interfaces;
 using ContentAggregator.Core.Models.YTModels;
+using static ContentAggregator.API.Program;
 
 namespace ContentAggregator.API.Services.BackgroundServices
 {
@@ -15,9 +16,9 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private readonly string _apiKey;
         private readonly ILogger<YoutubeService> _logger;
 
-        public YoutubeService(HttpClient httpClient, IServiceProvider serviceProvider, IConfiguration configuration, ILogger<YoutubeService> logger)
+        public YoutubeService(IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider, IConfiguration configuration, ILogger<YoutubeService> logger)
         {
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient(HttpClientNames.Default);
             _serviceProvider = serviceProvider;
             _logger = logger;
             _apiKey = configuration["YoutubeAccessToken"]!;

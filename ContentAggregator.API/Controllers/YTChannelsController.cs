@@ -4,6 +4,8 @@ using ContentAggregator.Core.Models.YTModels;
 using Newtonsoft.Json;
 using ContentAggregator.Core.Interfaces;
 using ContentAggregator.Core.Models.DTOs;
+using static ContentAggregator.API.Program;
+using System.Net.Http;
 
 namespace ContentAggregator.API.Controllers
 {
@@ -15,9 +17,9 @@ namespace ContentAggregator.API.Controllers
         private readonly IYTChannelRepository _yTChannelRepository;
         private readonly string _apiKey;
 
-        public YTChannelsController(HttpClient httpClient, IYTChannelRepository yTChannelRepository, IConfiguration configuration)
+        public YTChannelsController(IHttpClientFactory httpClientFactory, IYTChannelRepository yTChannelRepository, IConfiguration configuration)
         {
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient(HttpClientNames.Default);
             _yTChannelRepository = yTChannelRepository;
             _apiKey = configuration["YoutubeAccessToken"]!;
         }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using ContentAggregator.Core.Entities;
 using ContentAggregator.Core.Interfaces;
 using ContentAggregator.Core.Models;
+using static ContentAggregator.API.Program;
 
 namespace ContentAggregator.API.Services.BackgroundServices
 {
@@ -14,10 +15,10 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private readonly ILogger<SummarizerService> _logger;
         private readonly string _lMStudioApiURL;
 
-        public SummarizerService(IServiceProvider serviceProvider, HttpClient httpClient, IConfiguration configuration, ILogger<SummarizerService> logger)
+        public SummarizerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<SummarizerService> logger)
         {
             _serviceProvider = serviceProvider;
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient(HttpClientNames.LongTimeout);
             _logger = logger;
             _lMStudioApiURL = configuration["LMStudioApiURL"]!;
         }
