@@ -68,7 +68,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private async Task<string?> DownloadSubtitlesAsync(string videoId, string tempDir)
         {
             string tempDirForSingleSub = CreateTempDirectory(tempDir);
-            string ytDlpPath = Path.Combine("tools", "yt-dlp");
+            string ytDlpPath = Path.Combine(Path.DirectorySeparatorChar.ToString(), "tools", "yt-dlp");
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine("tools", "yt-dlp"),
