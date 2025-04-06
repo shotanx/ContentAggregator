@@ -137,7 +137,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
         }
 
         private const string SummarizeInstruction = """
-Your job is to summarize radio shows, podcasts and other conversations.
+Your job is to summarize radio shows, podcasts and other conversations, usually involving 2 participants.
 As the first line/paragraph of your response, return names of participants of the conversation, separated by a comma and Nothing else on that line.
 
 From the next paragraph, summarize the conversation by focusing on themes, ideas, and key points without mentioning any specific participants(e.g., avoid names like 'John Doe argues...'). Instead:
