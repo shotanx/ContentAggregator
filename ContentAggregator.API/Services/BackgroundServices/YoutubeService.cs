@@ -101,7 +101,9 @@ namespace ContentAggregator.API.Services.BackgroundServices
 
                     if (channel.TitleKeywords != null)
                     {
-                        items = items.Where(x => x.Snippet.Title.Contains(channel.TitleKeywords)).ToList();
+                        var keywords = channel.TitleKeywords.Split(';').Select(k => k.Trim()).ToList();
+
+                        items = items.Where(x => keywords.Any(keyword => x.Snippet.Title.Contains(keyword))).ToList();
                     }
 
                     var idLengthPairs = await FetchLongerVideos(items.Select(x => x.Id.VideoId), TimeSpan.FromMinutes(30));
