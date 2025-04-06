@@ -88,7 +88,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 }
                 else
                 {
-                    requestUrl = $"https://youtube.googleapis.com/youtube/v3/search?key={_apiKey}&channelId={channel.Id}&part=snippet&order=date&maxResults=3";
+                    requestUrl = $"https://youtube.googleapis.com/youtube/v3/search?key={_apiKey}&channelId={channel.Id}&part=snippet&order=date&maxResults=25";
                 }
                 var response = await _httpClient.GetAsync(requestUrl);
                 var yTContentEntities = new List<YoutubeContent>();
