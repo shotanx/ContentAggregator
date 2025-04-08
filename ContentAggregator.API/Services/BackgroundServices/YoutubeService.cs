@@ -42,7 +42,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                     foreach (var channel in channels)
                     {
                         _logger.LogInformation("Getting contents from youtube.");
-                        var yTContentEntities = await FetchYoutubeContents(channel);
+                        var yTContentEntities = await FetchYoutubeContents(channel); // TODO: This might throw exception. Need to encapsulate the background service in try-catch.
 
                         if (!yTContentEntities.IsNullOrEmpty())
                         {
@@ -103,7 +103,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                     {
                         var keywords = channel.TitleKeywords.Split(';').Select(k => k.Trim()).ToList();
 
-                        items = items.Where(x => keywords.Any(keyword => x.Snippet.Title.Contains(keyword))).ToList();
+                        items = items.Where(x => keywords.Any(keyword => x.Snippet.Title.Contains(keyword) || x.Snippet.Description.Contains(keyword))).ToList();
                     }
 
                     var idLengthPairs = await FetchLongerVideos(items.Select(x => x.Id.VideoId), TimeSpan.FromMinutes(30));
@@ -171,10 +171,19 @@ namespace ContentAggregator.API.Services.BackgroundServices
 
                 foreach (var item in videosResponse.Items)
                 {
-                    var duration = ParseIso8601Duration(item.ContentDetails.Duration);
-                    if (duration > videoLength)
+                    try
                     {
-                        idLengthPairs.Add(new KeyValuePair<string, TimeSpan>(item.Id, duration));
+                        var duration = ParseIso8601Duration(item.ContentDetails.Duration);
+
+                        if (duration > videoLength)
+                        {
+                            idLengthPairs.Add(new KeyValuePair<string, TimeSpan>(item.Id, duration));
+                        }
+                    }
+                    catch (NullReferenceException ex)
+                    {
+                        _logger.LogWarning(ex, $"{nameof(YoutubeService)}: {ex.Message}", item, item.ContentDetails);
+                        throw;
                     }
                 }
             }
