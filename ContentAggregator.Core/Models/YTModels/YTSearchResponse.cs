@@ -7,16 +7,16 @@ namespace ContentAggregator.Core.Models.YTModels
     {
         public required string Kind { get; set; }
         public required string Etag { get; set; }
-        public required List<Item> Items { get; set; }
+        public required List<SearchItem> Items { get; set; }
         public required PageInfo PageInfo { get; set; }
     }
 
-    public class Item
+    public class SearchItem
     {
         public required string Kind { get; set; }
         public required string Etag { get; set; }
         public required Id Id { get; set; }
-        public required Snippet Snippet { get; set; }
+        public required SearchSnippet Snippet { get; set; }
     }
 
     public class Id
@@ -25,16 +25,12 @@ namespace ContentAggregator.Core.Models.YTModels
         public required string VideoId { get; set; }
     }
 
-    public class Snippet
+    public class SearchSnippet :YTSnippet
     {
-        public DateTime PublishedAt { get; set; }
+        public DateTime PublishTime { get; set; }
         public required string ChannelId { get; set; }
-        public required string Title { get; set; }
-        public required string Description { get; set; }
-        public required Thumbnails Thumbnails { get; set; }
         public required string ChannelTitle { get; set; }
         public required string LiveBroadcastContent { get; set; }
-        public DateTime PublishTime { get; set; }
     }
 
     public class Thumbnails

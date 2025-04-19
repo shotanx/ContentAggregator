@@ -28,8 +28,6 @@ namespace ContentAggregator.API.Services.BackgroundServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken); // temporary while testing...
-
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var channelRepository = scope.ServiceProvider.GetRequiredService<IYTChannelRepository>();
@@ -119,11 +117,10 @@ namespace ContentAggregator.API.Services.BackgroundServices
                         var youtubeContent = new YoutubeContent
                         {
                             VideoId = idLengthPair.Key,
-                            VideoTitle = searchResponseItem.Snippet.Title, // Replace with actual title
-                            ChannelId = channel.Id, // Replace with actual channel ID
-                            VideoLength = idLengthPair.Value, // Replace with actual video length
+                            VideoTitle = searchResponseItem.Snippet.Title,
+                            ChannelId = channel.Id,
+                            VideoLength = idLengthPair.Value,
                             VideoPublishedAt = searchResponseItem.Snippet.PublishedAt, // Google API returns UTC, so doesn't need special conversion
-                            SubtitlesEngSRT = null // youtube's captions API doesn't allow access to other channels' captions
                         };
 
                         yTContentEntities.Add(youtubeContent);
@@ -135,14 +132,14 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 {
                     // log error
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.Error.WriteLine($"Error fetching YouTube contents: {response.StatusCode} - {errorContent}");
+                    _logger.LogInformation($"Error fetching YouTube contents: {response.StatusCode} - {errorContent}");
                     return null;
                 }
             }
             catch (Exception ex)
             {
                 // Handle exceptions (e.g., log the error)
-                Console.Error.WriteLine($"Exception occurred while fetching YouTube contents: {ex.Message}");
+                _logger.LogWarning($"Exception occurred while fetching YouTube contents: {ex.Message}");
                 throw;
             }
         }
@@ -190,9 +187,9 @@ namespace ContentAggregator.API.Services.BackgroundServices
             return idLengthPairs;
         }
 
-        private TimeSpan ParseIso8601Duration(string duration) // TODO: ამას unit test უნდა დავუწერო.
+        public static TimeSpan ParseIso8601Duration(string duration) // TODO: ამას unit test უნდა დავუწერო.
         {
-            if (duration == "P0D") // live-ებს აქვთ ეს duration. TODO: Risk of missing lives if LastPublishedDate is set to higher than live launch date.
+            if (duration == null || duration == "P0D") // live-ებს აქვთ ეს duration. TODO: Risk of missing lives if LastPublishedDate is set to higher than live launch date.
             {
                 // Think of possible solutions. 1. message broker.
                 // 2. Setting LastPublishedDate to lower than live. Risks duplicating newer videos that were added after live started but before live finished.

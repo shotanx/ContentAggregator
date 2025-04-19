@@ -19,9 +19,16 @@ namespace ContentAggregator.Infrastructure.Repositories
             return await _context.YTChannels.FindAsync(new object[] { id }, cancellationToken);
         }
 
+        public async Task<YTChannel?> GetChannelByUrlAsync(Uri url, CancellationToken cancellationToken)
+        {
+            return await _context.YTChannels
+             .AsNoTracking()
+             .SingleOrDefaultAsync(c => c.Url == url, cancellationToken);
+        }
+
         public async Task<IEnumerable<YTChannel>> GetAllChannelsAsync(CancellationToken cancellationToken)
         {
-            return await _context.YTChannels.ToListAsync(cancellationToken);
+            return await _context.YTChannels.Where(x => x.ActivityLevel != 0).ToListAsync(cancellationToken);
         }
 
         public async Task AddChannelAsync(YTChannel channel, CancellationToken cancellationToken)

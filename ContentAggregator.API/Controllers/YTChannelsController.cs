@@ -5,7 +5,8 @@ using Newtonsoft.Json;
 using ContentAggregator.Core.Interfaces;
 using ContentAggregator.Core.Models.DTOs;
 using static ContentAggregator.API.Program;
-using System.Net.Http;
+using System.Web;
+using ContentAggregator.API.Services.BackgroundServices;
 
 namespace ContentAggregator.API.Controllers
 {
@@ -88,7 +89,7 @@ namespace ContentAggregator.API.Controllers
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     var searchResponse = JsonConvert.DeserializeObject<YTSearchResponse>(content);
-                    Item item;
+                    SearchItem item;
                     if (searchResponse!.Items.Count > 1)
                     {
                         if (channelDTO.ChannelTitle == null)
@@ -145,6 +146,95 @@ namespace ContentAggregator.API.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpPost("videos")]
+        public async Task<ActionResult<YoutubeContent>> PostYoutubeVideo(
+            [FromQuery] Uri videoUrl,
+            [FromQuery] string? channelSuffix,
+            CancellationToken cancellationToken)
+        {
+            // Extract videoId from the video URL
+            var videoId = HttpUtility.ParseQueryString(videoUrl.Query).Get("v");
+            if (string.IsNullOrEmpty(videoId))
+            {
+                return BadRequest("Invalid YouTube video URL.");
+            }
+
+            YTChannel? channel = null;
+
+            if (!string.IsNullOrEmpty(channelSuffix))
+            {
+                var channelUrl = new Uri("https://www.youtube.com/" + channelSuffix);
+                channel = await _yTChannelRepository.GetChannelByUrlAsync(channelUrl, cancellationToken);
+            }
+
+            var videoRequestUrl = $"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id={videoId}&key={_apiKey}";
+            var videoHttpResponse = await _httpClient.GetAsync(videoRequestUrl, cancellationToken);
+
+            if (!videoHttpResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await videoHttpResponse.Content.ReadAsStringAsync();
+                return BadRequest($"Error fetching video details: {videoHttpResponse.StatusCode} - {errorContent}");
+            }
+
+            var videoContent = await videoHttpResponse.Content.ReadAsStringAsync();
+            var videosResponse = JsonConvert.DeserializeObject<YTVideosResponse>(videoContent);
+
+            if (videosResponse?.Items.Count != 1)
+            {
+                return NotFound("Video not found on YouTube.");
+            }
+
+            VideoItem videoItem = videosResponse.Items[0];
+            //if (channel != null)
+            //{
+            //    // Get youtube info
+            //    // Save youtube info and return success.
+            //}
+            if (channel == null)
+            {
+                var channelId = videoItem.Snippet.ChannelId;
+                var channelName = videoItem.Snippet.ChannelTitle;
+
+                // Optionally fetch more channel details using the `channels` endpoint
+                var channelRquestUrl = $"https://www.googleapis.com/youtube/v3/channels?part=snippet&id={channelId}&key={_apiKey}";
+                var channelHttpResponse = await _httpClient.GetAsync(channelRquestUrl, cancellationToken);
+
+                if (channelHttpResponse.IsSuccessStatusCode)
+                {
+                    var channelContent = await channelHttpResponse.Content.ReadAsStringAsync();
+                    var channelsResponse = JsonConvert.DeserializeObject<YTChannelsResponse>(channelContent);
+                    channelSuffix = channelsResponse.Items[0].Snippet.CustomUrl;
+                }
+
+                channel = new YTChannel
+                {
+                    Name = channelName,
+                    Id = channelId,
+                    Url = new Uri($"https://www.youtube.com/{channelSuffix}"),
+                    ActivityLevel = 0, // ActivityLevel 0 channels won't be used in YoutubeService
+                };
+
+                await _yTChannelRepository.AddChannelAsync(channel, cancellationToken);
+            }
+
+            // TODO: Move ParseIso8601Duration outside of YoutubeService.Check if it returns proper length before saving to DB
+
+            var youtubeContent = new YoutubeContent
+            {
+                VideoId = videoId,
+                VideoTitle = videoItem.Snippet.Title,
+                ChannelId = videoItem.Snippet.ChannelId,
+                VideoLength = YoutubeService.ParseIso8601Duration(videoItem.ContentDetails.Duration),
+                VideoPublishedAt = videoItem.Snippet.PublishedAt
+            };
+
+            channel.YoutubeContents.Add(youtubeContent);
+            await _yTChannelRepository.SaveChangesAsync(cancellationToken);
+
+            return CreatedAtAction(nameof(GetYTChannel), new { id = channel.Id }, youtubeContent);
+
         }
     }
 }
