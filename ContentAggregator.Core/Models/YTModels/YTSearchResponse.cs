@@ -27,7 +27,7 @@ namespace ContentAggregator.Core.Models.YTModels
 
     public class SearchSnippet :YTSnippet
     {
-        public DateTime PublishTime { get; set; }
+        public DateTimeOffset PublishTime { get; set; }
         public required string ChannelId { get; set; }
         public required string ChannelTitle { get; set; }
         public required string LiveBroadcastContent { get; set; }
