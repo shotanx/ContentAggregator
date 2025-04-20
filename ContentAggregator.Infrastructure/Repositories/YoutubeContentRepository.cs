@@ -19,6 +19,11 @@ namespace ContentAggregator.Infrastructure.Repositories
             return await _context.YoutubeContents.FindAsync(id);
         }
 
+        public async Task<List<YoutubeContent>> GetYTContentsNeedingRefetch()
+        {
+            return await _context.YoutubeContents.Where(x => x.NeedsRefetch).ToListAsync();
+        }
+
         public async Task<List<YoutubeContent>> GetYTContentsWithoutEngSRT()
         {
             return await _context.YoutubeContents.Where(x => x.SubtitlesEngSRT == null).ToListAsync();
@@ -56,10 +61,24 @@ namespace ContentAggregator.Infrastructure.Repositories
             _context.YoutubeContents.Update(yTContent);
             await _context.SaveChangesAsync();
         }
+
         public async Task UpdateYTContentsRangeAsync(List<YoutubeContent> yTContents)
         {
             _context.YoutubeContents.UpdateRange(yTContents);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteYTContentAsync(int id, CancellationToken cancellationToken)
+        {
+            var yTContent = await _context.YoutubeContents.FindAsync(new object[] { id }, cancellationToken);
+            if (yTContent == null)
+            {
+                return false;
+            }
+
+            _context.YoutubeContents.Remove(yTContent);
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
     }
 }

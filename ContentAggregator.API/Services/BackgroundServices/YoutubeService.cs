@@ -15,6 +15,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
         private readonly IServiceProvider _serviceProvider;
         private readonly string _apiKey;
         private readonly ILogger<YoutubeService> _logger;
+        private readonly TimeSpan _minimumVideoLength = TimeSpan.FromMinutes(30);
 
         public YoutubeService(IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider, IConfiguration configuration, ILogger<YoutubeService> logger)
         {
@@ -31,6 +32,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 try
                 {
                     await ProcessChannelsAsync(stoppingToken);
+                    await ProcessVideosNeedingRefetchAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -38,6 +40,49 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 }
 
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            }
+        }
+
+        private async Task ProcessVideosNeedingRefetchAsync(CancellationToken stoppingToken)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var yTContentRepository = scope.ServiceProvider.GetRequiredService<IYoutubeContentRepository>();
+
+            var videosNeedingRefetch = await yTContentRepository.GetYTContentsNeedingRefetch();
+
+            if (videosNeedingRefetch.IsNullOrEmpty())
+            {
+                _logger.LogInformation("No videos needing refetch.");
+                return;
+            }
+
+            var requestUrl = $"https://youtube.googleapis.com/youtube/v3/videos?id={videosNeedingRefetch.Select(x => x.VideoId)}&key={_apiKey}&part=contentDetails";
+            var response = await _httpClient.GetAsync(requestUrl);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning($"Failed to fetch video details: {response.StatusCode}");
+                return;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var videosResponse = JsonConvert.DeserializeObject<YTVideosResponse>(content)!;
+
+            foreach (var video in videosResponse.Items)
+            {
+                var duration = ParseIso8601Duration(video.ContentDetails!.Duration);
+                var ytContent = videosNeedingRefetch.Single(x => x.VideoId == video.Id);
+
+                if (duration > _minimumVideoLength)
+                {
+                    ytContent.NeedsRefetch = false;
+                    ytContent.VideoLength = duration;
+                    await yTContentRepository.UpdateYTContentsAsync(ytContent);
+                }
+                else if (duration != TimeSpan.Zero) // if not zero, but greater than minimum, delete it
+                {
+                    await yTContentRepository.DeleteYTContentAsync(ytContent.Id, stoppingToken);
+                }
             }
         }
 
@@ -100,7 +145,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
 
         private async Task<List<YoutubeContent>> MapToYoutubeContentsAsync(List<SearchItem> searchItems, YTChannel channel)
         {
-            var longerVideos = await FetchLongerVideosAsync(searchItems, TimeSpan.FromMinutes(30));
+            var longerVideos = await FetchLongerVideosAsync(searchItems, _minimumVideoLength);
             if (longerVideos.IsNullOrEmpty())
             {
                 return new List<YoutubeContent>();
@@ -112,7 +157,8 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 VideoTitle = video.VideoTitle,
                 ChannelId = channel.Id,
                 VideoLength = video.VideoLength,
-                VideoPublishedAt = video.PublishedAt
+                VideoPublishedAt = video.PublishedAt,
+                NeedsRefetch = video.VideoLength == TimeSpan.Zero
             }).ToList();
         }
 
@@ -141,10 +187,10 @@ namespace ContentAggregator.API.Services.BackgroundServices
                 .Select(video => new
                 {
                     VideoId = video.Id,
-                    Duration = ParseIso8601Duration(video.ContentDetails.Duration),
+                    Duration = ParseIso8601Duration(video.ContentDetails!.Duration),
                     SearchItem = searchItems.Single(x => x.Id.VideoId == video.Id)
                 })
-                .Where(x => x.Duration > minLength)
+                .Where(x => x.Duration > minLength || x.Duration == TimeSpan.Zero)
                 .Select(x => (
                     x.VideoId,
                     x.SearchItem.Snippet.Title,
