@@ -26,7 +26,7 @@ namespace ContentAggregator.Infrastructure.Repositories
 
         public async Task<List<YoutubeContent>> GetYTContentsWithoutEngSRT()
         {
-            return await _context.YoutubeContents.Where(x => x.SubtitlesEngSRT == null).ToListAsync();
+            return await _context.YoutubeContents.Where(x => x.SubtitlesEngSRT == null && !x.NeedsRefetch).ToListAsync();
         }
 
         public async Task<List<YoutubeContent>> GetYTContentsWithoutEngSummaries()

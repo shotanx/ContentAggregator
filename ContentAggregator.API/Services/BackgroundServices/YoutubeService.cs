@@ -39,7 +39,7 @@ namespace ContentAggregator.API.Services.BackgroundServices
                     _logger.LogError(ex, "An error occurred while processing YouTube channels.");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(2.5), stoppingToken);
             }
         }
 
